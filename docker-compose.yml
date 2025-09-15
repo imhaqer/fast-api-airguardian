@@ -1,0 +1,39 @@
+version '3.9'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: airguardian_postgres
+    environment:
+      POSTGRES_USER: airguardian_user
+      POSTGRES_PASSWORD: airguardian_pass
+      POSTGRES_DB: airguardian_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  fastapi:
+    build: .
+    container_name: airguardian_fastapi
+    command: fastapi dev src.fast_api_airguradian.main.py --host 0.0.0.0 --port 8000
+    volumes:
+      - .src:/app/arc
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+  celery:
+    build: .
+    container_name: airguardian_celery
+    command: poetry run celery -A src.fast_api_airguradian.celery worker --beat --loglevel=info
+    volumes:
+      - .src:/app/src
+    depends_on:
+      - fastapi
+      - postgres
+    volumes:
+      pgdata:
+
+
+
