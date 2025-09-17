@@ -11,13 +11,14 @@ RUN apt-get update && apt-get install -y \
 RUN curl -sSh  -sSL https://install.python-poetry.org | python3 -
 
 ENV PATH="/root/.local/bin:$PATH" \
-    POETERY_VIRTUALENVS_CREATE=false \
+    POETRY_VIRTUALENVS_CREATE=false \
     POETRY_NO_INTERACTION=1
 
 WORKDIR /app
 
 COPY pyproject.toml poetry.lock* /app/
 
+RUN pip install poetry
 RUN poetry install --no-root --no-interaction --no-ansi
 
 
@@ -27,7 +28,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-copy --from=builder /usr/local /usr/local
+COPY --from=builder /usr/local /usr/local
 COPY src ./src
 
 EXPOSE 8000
