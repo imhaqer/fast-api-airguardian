@@ -33,4 +33,4 @@ COPY src ./src
 
 EXPOSE 8000
 
-CMD ["poerty", "run", "fastapi", "dev", "src/fast_api_airguardian/main.py", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["poetry", "run", "uvicorn", "src.fast_api_airguardian.main:app", "--host", "0.0.0.0", "--port", "8000"]

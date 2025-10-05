@@ -15,12 +15,18 @@ dependencies = [
     "celery (>=5.5.3,<6.0.0)",
     "asyncpg (>=0.30.0,<0.31.0)",
     "sqlalchemy (>=2.0.43,<3.0.0)",
-    "python-dotenv (>=1.1.1,<2.0.0)"
+    "python-dotenv (>=1.1.1,<2.0.0)",
+    "alembic (>=1.16.5,<2.0.0)",
+    "requests (>=2.32.5,<3.0.0)",
+    "psycopg2-binary (>=2.9.10,<3.0.0)"
 ]
 
 [tool.poetry]
 packages = [{include = "fast_api_airguardian", from = "src"}]
 
+
+[tool.poetry.group.dev.dependencies]
+uvicorn = {extras = ["standard"], version = "^0.35.0"}
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

@@ -6,10 +6,14 @@ services:
     container_name: airguardian_postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD:  ${POSTGRES_PASSWORD}
-      POSTGRES_DB:  ${POSTGRES_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      retries: 5
     volumes:
       - pgdata:/var/lib/postgresql/data
 
@@ -18,41 +22,48 @@ services:
     container_name: airguardian_redis
     ports:
       - "6379:6379"
+    volumes:
+      - redisdata:/data  # for Redis to persist data
 
-
+  #add health check for fastapi
   fastapi:
     build: .
     container_name: airguardian_fastapi
-    command: fastapi dev src/fast_api_airguardian/main.py --host 0.0.0.0 --port 8000
+    working_dir: /app
+    command: poetry run uvicorn src.fast_api_airguardian.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
-      database_url:  ${DATABASE_URL}
-      base_url: ${BASE_URL}
-      redis_url: ${REDIS_URL}
+      PYTHONPATH: /app/src
+      DATABASE_URL_ASYNC: ${DATABASE_URL_ASYNC}    # async DB URL
+      BASE_URL: ${BASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      API_SECRET: ${API_SECRET}
     volumes:
-      - ./src:/app/src
+      - ./:/app/
     ports:
       - "8000:8000"
     depends_on:
       - postgres
-      - redis
-
+     # - redis
 
   celery:
     build: .
     container_name: airguardian_celery
-    command: poetry run celery -A src/fast_api_airguardian/celery worker --beat --loglevel=info
+    working_dir: /app
+    #user: "nobody:nogroup"
+    command: poetry run celery -A src.fast_api_airguardian.celery worker --beat --loglevel=info
     environment:
-      database_url:  ${DATABASE_URL}
-      base_url: ${BASE_URL}
-      redis_url: ${REDIS_URL}
+      PYTHONPATH: /app/src
+      DATABASE_URL_SYNC: ${DATABASE_URL_SYNC} 
+      BASE_URL: ${BASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      API_SECRET: ${API_SECRET}
     volumes:
-      - ./src:/app/src
+      - ./:/app/
     depends_on:
-      #- fastapi
+      - fastapi
       - postgres
       - redis
+
 volumes:
   pgdata:
-
-
-
+  redisdata:
