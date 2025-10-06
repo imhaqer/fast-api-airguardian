@@ -17,6 +17,9 @@ celery_app.conf.update(
     enable_utc=True,
    # task_acks_late=True,
    #  worker_prefetch_multiplier=1,
+    
+    # ADD THIS for better task discovery:
+    imports=['src.fast_api_airguardian.task']
 )
 
 celery_app.conf.beat_schedule = {
@@ -27,5 +30,8 @@ celery_app.conf.beat_schedule = {
 }
 
 # Import tasks here so Celery registers them
-celery_app.autodiscover_tasks(['src.fast_api_airguardian'])
-from src.fast_api_airguardian import task
+"""celery_app.autodiscover_tasks(['src.fast_api_airguardian'])
+from src.fast_api_airguardian import task"""
+
+# FIX: Remove the circular import at the bottom
+# from src.fast_api_airguardian import task  ← DELETE THIS LINE

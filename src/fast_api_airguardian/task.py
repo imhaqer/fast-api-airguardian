@@ -14,9 +14,9 @@ from fast_api_airguardian.settings import settings
 from .schemas import Drone
 from pydantic import ValidationError
 #import asyncio
-from fast_api_airguardian.database import get_db
 import requests
-from fast_api_airguardian.model import ViolationSync as Violation
+from fast_api_airguardian.model import Violation
+from .database import get_db_session 
 
 logger = logging.getLogger(__name__)
 
@@ -65,36 +65,43 @@ def store_violation_to_db(drone_data: dict, owner_info: dict):
     """2nd try Create a NEW database session for each violation - NO db parameter!"""
     """SYNC version - use regular Session, not AsyncSession"""
     # Create sync engine and session
-    engine = create_engine(str(settings.database_url_sync))
+    # ❌ Creating new engine for each violation:
+    #engine = create_engine(str(settings.database_url_sync))
+
+    """✅ CORRECT: Use shared database engine and connection pool"""
+    db = get_db_session()  # ✅ Get session from shared pool
     
-    with Session(engine) as db:  # Regular Session, not AsyncSession
+    try:
+        x = drone_data.get("x", 0)
+        y = drone_data.get("y", 0)
+        distance = calculate_distance(x, y)
 
-        try:
-            x = drone_data.get("x", 0)
-            y = drone_data.get("y", 0)
-            distance = calculate_distance(x, y)
-
-            violations = Violation (
-                drone_id=drone_data.get("id", ""),
-                timestamp=datetime.utcnow(),
-                position_x=x,
-                position_y=y,
-                position_z=drone_data.get("z", 0),
-                distance_from_center=distance,
-                owner_first_name=owner_info.get("first_name", ""),
-                owner_last_name=owner_info.get("last_name", ""),
-                owner_ssn=owner_info.get("social_security_number", ""),
-                owner_phone=owner_info.get("phone_number", "")
-            )
-            db.add(violations)
-            db.commit()
-            db.refresh(violations)
-            print(f"✅ Violation stored for drone {drone_data.get('id')}")
-              
-        except Exception as e:
-            db.rollback()
-            print(f"❌ Error storing violation: {e}")
-            raise
+        # ✅ Fixed variable name (violations → violation)
+        violation = Violation(  # SINGULAR, not plural
+            drone_id=drone_data.get("id", ""),
+            timestamp=datetime.utcnow(),
+            position_x=x,
+            position_y=y,
+            position_z=drone_data.get("z", 0),
+            distance_from_center=distance,
+            owner_first_name=owner_info.get("first_name", ""),
+            owner_last_name=owner_info.get("last_name", ""),
+            owner_ssn=owner_info.get("social_security_number", ""),
+            owner_phone=owner_info.get("phone_number", "")
+        )
+        
+        db.add(violation)
+        db.commit()
+        db.refresh(violation)
+        print(f"✅ Violation stored for drone {drone_data.get('id')}")
+        return violation
+          
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Error storing violation: {e}")
+        raise
+    finally:
+        db.close()  # ✅ Always close session
    # return violations
 
 
