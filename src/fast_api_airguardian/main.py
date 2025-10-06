@@ -1,21 +1,18 @@
 from fastapi import FastAPI, HTTPException, Header, Depends
 from fast_api_airguardian.settings import settings
 import httpx
-from pydantic import BaseModel
 from typing import List
 from fast_api_airguardian import schemas
 from pydantic import ValidationError
-# from fast_api_airguardian.model import Violation
-import math
-import asyncpg
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from fast_api_airguardian.database import get_db
-import signal
+from fast_api_airguardian.database import get_async_db
 from sqlalchemy.future import select
-from fast_api_airguardian.model import ViolationAsync as Violation
-
-import asyncio
+from fast_api_airguardian.model import Violation
+from .database import get_async_db, create_tables_sync 
+import time
+from .model import Violation
+from sqlalchemy.exc import OperationalError
 
 NO_FLYING_ZONE = 1000
 
@@ -28,6 +25,24 @@ app = FastAPI()
 async def shutdown_event():
     print("Shutting down gracefully...")
     # Clean up resources
+@app.on_event("startup")
+def startup_event():
+    """Docker-aware startup with retry logic"""
+    max_retries = 5
+    for attempt in range(max_retries):
+        try:
+            create_tables_sync()
+            print("✅ Database tables ready")
+            break
+        except OperationalError as e:
+            if attempt < max_retries - 1:
+                wait_time = 2 ** attempt  # Exponential backoff
+                print(f"⚠️ Database not ready, retrying in {wait_time}s... (attempt {attempt + 1}/{max_retries})")
+                time.sleep(wait_time)
+            else:
+                print("❌ Failed to connect to database after multiple attempts")
+                raise
+
 
 @app.get("/health")
 def health():
@@ -56,10 +71,10 @@ async def get_drones():
 
 @app.get("/nfz", response_model=list[schemas.ViolationSchema])
 async def read_violations(
-    db: AsyncSession = Depends(get_db),
-    x_sercret: str = Header(None)
+    db: AsyncSession = Depends(get_async_db),
+    x_secret: str = Header(None)
 ):
-    if x_sercret != settings.api_secret:
+    if x_secret != settings.api_secret:
         raise HTTPException(status_code=401, detail="Invalid secret key")
         
     result = await db.execute(select(Violation))
