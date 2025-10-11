@@ -1,6 +1,6 @@
 
 # Stage 1: build dependencies
-FROM python:3.13-slim AS builder
+FROM python:3.12-slim AS builder
 
 RUN apt-get update && apt-get install -y \
     curl \
@@ -23,7 +23,7 @@ RUN poetry install --no-root --no-interaction --no-ansi
 
 
 # Stage 2: runtime
-FROM python:3.13-slim
+FROM python:3.12-slim
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
