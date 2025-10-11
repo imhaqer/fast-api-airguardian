@@ -6,7 +6,7 @@ authors = [
     {name = "hahamdan",email = "hahamdan@student.hive.fi"}
 ]
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "fastapi[standard] (>=0.116.1,<0.117.0)",
     "pydantic (>=2.11.7,<3.0.0)",
@@ -27,6 +27,8 @@ packages = [{include = "fast_api_airguardian", from = "src"}]
 
 [tool.poetry.group.dev.dependencies]
 uvicorn = {extras = ["standard"], version = "^0.35.0"}
+pytest = "^8.4.2"
+pytest-asyncio = "^1.2.0"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
