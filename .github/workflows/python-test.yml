@@ -12,6 +12,7 @@ jobs:
 
     # Add env variables here
     env:
+      PYTHONPATH: src
       BASE_URL: "http://test"
       DATABASE_URL: "postgresql://user:pass@localhost/testdb"
       REDIS_URL: "redis://localhost:6379"
