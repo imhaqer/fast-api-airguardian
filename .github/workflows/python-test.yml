@@ -13,12 +13,12 @@ jobs:
     # Add env variables here
     env:
       BASE_URL: "http://test"
-      DATABASE_URL: "sqlite:///:memory:"
+      DATABASE_URL: "postgresql://user:pass@localhost/testdb"
       REDIS_URL: "redis://localhost:6379"
-      POSTGRES_USER: "testuser"
-      POSTGRES_PASSWORD: "testpass"
-      DATABASE_URL_ASYNC: "sqlite+aiosqlite:///:memory:"
-      DATABASE_URL_SYNC: "sqlite:///:memory:"
+      POSTGRES_USER: "user"
+      POSTGRES_PASSWORD: "pass"
+      DATABASE_URL_ASYNC: "postgresql+asyncpg://user:pass@localhost/testdb"
+      DATABASE_URL_SYNC: "postgresql://user:pass@localhost/testdb"
       POSTGRES_DB: "testdb"
 
     steps:
