@@ -32,7 +32,9 @@ Ensure you have the following installed on your system:
 -   Docker Compose
 ## ⚙️ Quick Start
 
-### Method 1: Using Docker Compose (Recommended)
-1.  **Clone the repository:**
-    ```bash
-    ```
+1. **Clone & setup:**
+
+   ```bash
+   git clone https://github.com/imhaqer/fast-api-airguardian.git
+   cd fast-api-airguardian
+
