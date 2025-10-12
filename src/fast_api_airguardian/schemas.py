@@ -1,13 +1,13 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 
 
 class Drone(BaseModel):
     id: str
     owner_id: int
-    x: int  # API returns 'x', not 'position_x'
-    y: int  # API returns 'y', not 'position_y'  
-    z: int  # API returns 'z', not 'position_z'
+    x: int
+    y: int
+    z: int
 
 
 class ViolationSchema(BaseModel):
@@ -22,7 +22,7 @@ class ViolationSchema(BaseModel):
     owner_ssn: str
     owner_phone: int
 
-    class Config:
-        from_attributes = True #* 'orm_mode' has been renamed to 'from_attributes'
-   # severity: str
+   # class Config:
+       # from_attributes = True #* 'orm_mode' has been renamed to 'from_attributes'
+    model_config = ConfigDict(from_attributes=True)  # modern way
 

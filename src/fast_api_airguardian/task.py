@@ -1,19 +1,14 @@
 from src.fast_api_airguardian.celery import celery_app
 from fastapi import HTTPException
-# SYNC SQLAlchemy imports
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-# import httpx
 import asyncio
 from datetime import datetime
 import logging
 import math
-#from .database import async_session
-# from .model import Violation, Base
 from fast_api_airguardian.settings import settings
 from .schemas import Drone
 from pydantic import ValidationError
-#import asyncio
 import requests
 from fast_api_airguardian.model import Violation
 from .database import get_db_session 
@@ -77,7 +72,7 @@ def store_violation_to_db(drone_data: dict, owner_info: dict):
         distance = calculate_distance(x, y)
 
         # ✅ Fixed variable name (violations → violation)
-        violation = Violation(  # SINGULAR, not plural
+        violation = Violation(
             drone_id=drone_data.get("id", ""),
             timestamp=datetime.utcnow(),
             position_x=x,

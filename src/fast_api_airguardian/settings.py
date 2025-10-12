@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from pydantic import AnyHttpUrl, PostgresDsn, RedisDsn
+from pydantic import AnyHttpUrl, PostgresDsn, RedisDsn, ConfigDict
 from typing import Literal
 
 class Settings(BaseSettings):
@@ -13,7 +13,8 @@ class Settings(BaseSettings):
     database_url_sync: PostgresDsn   # sync URL (without asyncpg)
     postgres_db: str
     
-    class Config:
-        env_file = ".env"
+    #class Config:
+       # env_file = ".env"
+    model_config = ConfigDict(env_file=".env")  # modern way
 
 settings = Settings()
