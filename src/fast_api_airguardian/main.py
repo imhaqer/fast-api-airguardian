@@ -56,8 +56,8 @@ async def get_drones():
             response = await client.get(str(settings.base_url))
             response.raise_for_status()
             data = response.json()
-            print("📦 Raw API response:")
-            print(data)
+            #print("📦 Raw API response:")
+            #print(data)
     except Exception as e:
             print(f"❌ Drone fetch error: {e}")
             raise HTTPException(status_code=503, detail="Drone data unavailable")
