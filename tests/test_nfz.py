@@ -27,7 +27,7 @@ def test_is_in_nfz(position_x, position_y, expected):
 
 
 # @pytest.mark.asyncio no need for async 
-def test_get_drones(mocker, fake_response, fake_data):
+def test_get_drones(mocker, fake_response):
     mocker.patch("src.fast_api_airguardian.main.httpx.AsyncClient.get",
                 return_value=fake_response)
     response = client.get("/drones") # sync call
