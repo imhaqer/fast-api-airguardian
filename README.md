@@ -23,7 +23,7 @@ A real-time drone monitoring system designed to protect critical infrastructure 
 -   **Message Broker:** Redis
 -   **Containerization:** Docker & Docker Compose
 -   **Python Dependency Management:** Poetry
--   **Testing:** Pytest, HTTPX, pytest-cov
+-   **Testing:** Pytest, HTTPX, pytest-mock
 
 ## 📋 Prerequisites
 
@@ -37,4 +37,5 @@ Ensure you have the following installed on your system:
    ```bash
    git clone https://github.com/imhaqer/fast-api-airguardian.git
    cd fast-api-airguardian
+
 
