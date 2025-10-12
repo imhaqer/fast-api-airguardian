@@ -4,7 +4,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 import asyncio
 from datetime import datetime
-import logging
 import math
 from fast_api_airguardian.settings import settings
 from .schemas import Drone
@@ -12,6 +11,7 @@ from pydantic import ValidationError
 import requests
 from fast_api_airguardian.model import Violation
 from .database import get_db_session 
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ def fetch_drones_data() -> list[dict]:
             return response.json()
         except Exception as e:
             print(f"⚠️ Attempt {attempt + 1}/{MAX_REPEAT} failed: {e}")
-    print("❌ Failed to fetch drone data after multiple attempts.")
+    logger.error("❌ Failed to fetch drone data after multiple attempts.")
     return []
 
 def get_drone_owner_info(owner_id: int) -> dict:
@@ -52,7 +52,7 @@ def get_drone_owner_info(owner_id: int) -> dict:
         response.raise_for_status()
         return response.json()
     except Exception as e:
-        print(f"Error fetching owner info: {e}")
+        logger.error(f"Error fetching owner info: {e}")
         return {}
 
 def store_violation_to_db(drone_data: dict, owner_info: dict):
@@ -84,16 +84,14 @@ def store_violation_to_db(drone_data: dict, owner_info: dict):
             owner_ssn=owner_info.get("social_security_number", ""),
             owner_phone=owner_info.get("phone_number", "")
         )
-        
         db.add(violation)
         db.commit()
         db.refresh(violation)
-        print(f"✅ Violation stored for drone {drone_data.get('id')}")
-        return violation
-          
+        logger.info(f"✅ Violation stored for drone {drone_data.get('id')}")
+        return violation     
     except Exception as e:
         db.rollback()
-        print(f"❌ Error storing violation: {e}")
+        logger.error(f"❌ Error storing violation: {e}")
         raise
     finally:
         db.close()  # ✅ Always close session
@@ -106,13 +104,13 @@ def process_nfz_violations(): # without passing a session
     drone_data_raw = fetch_drones_data()
 
     if not drone_data_raw:
-        logger.warning("⚠️ No drone data received.")
+        logger.info("⚠️ No drone data received.")
         return 0
 
     try: 
         # ✅ Now this will work because Drone model matches API fields
         drones = [Drone(**drone) for drone in drone_data_raw]
-        print(f"✅ Successfully validated {len(drones)} drones")
+        logger.info(f"✅ Successfully validated {len(drones)} drones")
             
     except ValidationError as e:
         logger.error("❌ Validation error while parsing drone data: %s", e)
@@ -123,7 +121,7 @@ def process_nfz_violations(): # without passing a session
         # ✅ Use the correct field names: drone.x, drone.y (not position_x, position_y)
         if is_in_nfz(drone.x, drone.y):
             distance = calculate_distance(drone.x, drone.y)
-            print(f"🚨 NFZ Violation! Drone {drone.id} at position ({drone.x}, {drone.y}) - Distance: {distance:.2f} units")
+            logger.warning(f"🚨 NFZ Violation! Drone id: {drone.id}")
             
             owner_info = get_drone_owner_info(drone.owner_id) if drone.owner_id else {}
             
@@ -131,7 +129,7 @@ def process_nfz_violations(): # without passing a session
             drone_dict = drone.dict()
             store_violation_to_db(drone_dict, owner_info)  # No db paramete
             violations_detected += 1
-    print(f"NFZ check completed. Found {violations_detected} violations.")
+    logger.info(f"NFZ check completed. Found {violations_detected} violations.")
     return violations_detected
 
 

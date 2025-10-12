@@ -47,4 +47,3 @@ def get_db_session():
 def create_tables_sync():
     """Create all tables using sync engine"""
     Base.metadata.create_all(bind=sync_engine)
-    print("✅ Tables created successfully.")

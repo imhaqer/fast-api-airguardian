@@ -4,19 +4,18 @@ import httpx
 from typing import List
 from fast_api_airguardian import schemas
 from pydantic import ValidationError
-from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from fast_api_airguardian.database import get_async_db
 from sqlalchemy.future import select
 from fast_api_airguardian.model import Violation
 from .database import get_async_db, create_tables_sync 
 import time
 from .model import Violation
 from sqlalchemy.exc import OperationalError
+import logging
+
+logger = logging.getLogger(__name__)
 
 NO_FLYING_ZONE = 1000
-
-# BASE_URL = str(settings.base_url)
 
 app = FastAPI()
 
@@ -25,6 +24,8 @@ app = FastAPI()
 async def shutdown_event():
     print("Shutting down gracefully...")
     # Clean up resources
+
+
 @app.on_event("startup")
 def startup_event():
     """Docker-aware startup with retry logic"""
@@ -32,15 +33,15 @@ def startup_event():
     for attempt in range(max_retries):
         try:
             create_tables_sync()
-            print("✅ Database tables ready")
+            logger.info("✅ Database tables ready")
             break
         except OperationalError as e:
             if attempt < max_retries - 1:
                 wait_time = 2 ** attempt  # Exponential backoff
-                print(f"⚠️ Database not ready, retrying in {wait_time}s... (attempt {attempt + 1}/{max_retries})")
+                logger.warning(f"⚠️ Database not ready, retrying in {wait_time}s... (attempt {attempt + 1}/{max_retries})")
                 time.sleep(wait_time)
             else:
-                print("❌ Failed to connect to database after multiple attempts")
+                logger.error("❌ Failed to connect to database after multiple attempts")
                 raise
 
 
@@ -48,26 +49,26 @@ def startup_event():
 def health():
     return {"success": "ok"}
 
+
 @app.get("/drones", response_model=List[schemas.Drone])
 async def get_drones():
     try:
-        print(f"📡 Fetching drones from {str(settings.base_url)}")
+        logger.info(f"📡 Fetching drones from {str(settings.base_url)}")
         async with httpx.AsyncClient() as client:
             response = await client.get(str(settings.base_url))
             response.raise_for_status()
             data = response.json()
-            #print("📦 Raw API response:")
-            #print(data)
     except Exception as e:
-            print(f"❌ Drone fetch error: {e}")
+            logger.error(f"❌ Drone fetch error: {e}")
             raise HTTPException(status_code=503, detail="Drone data unavailable")
     try:
         drones = [schemas.Drone(**drone) for drone in data]
         return drones
     except ValidationError as e:
-            print("❌ Validation error while parsing drone data:")
+            logger.error("❌ Validation error while parsing drone data:")
             print(e)
             raise HTTPException(status_code=500, detail="Invalid drone data received")
+
 
 @app.get("/nfz", response_model=list[schemas.ViolationSchema])
 async def read_violations(
@@ -82,5 +83,4 @@ async def read_violations(
 
     if not violations:
         raise HTTPException(status_code=404, detail="No NFZ violations found")
-
     return violations
