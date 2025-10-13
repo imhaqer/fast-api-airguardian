@@ -58,8 +58,8 @@ async def get_drones():
         drones = [schemas.Drone(**drone) for drone in data]
         return drones
     except ValidationError as e:
-            logger.error("❌ Validation error while parsing drone data:", e)
-            raise HTTPException(status_code=500, detail="Invalid drone data received")
+        logger.error(f"❌ Validation error while parsing drone data: {e}")
+        raise HTTPException(status_code=500, detail="Invalid drone data received")
 
 
 @app.get("/nfz", response_model=list[schemas.ViolationSchema])
