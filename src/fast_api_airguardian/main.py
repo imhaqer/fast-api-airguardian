@@ -19,13 +19,6 @@ NO_FLYING_ZONE = 1000
 
 app = FastAPI()
 
-#graceful shutdown
-@app.on_event("shutdown")
-async def shutdown_event():
-    print("Shutting down gracefully...")
-    # Clean up resources
-
-
 @app.on_event("startup")
 def startup_event():
     """Docker-aware startup with retry logic"""
@@ -65,8 +58,7 @@ async def get_drones():
         drones = [schemas.Drone(**drone) for drone in data]
         return drones
     except ValidationError as e:
-            logger.error("❌ Validation error while parsing drone data:")
-            print(e)
+            logger.error("❌ Validation error while parsing drone data:", e)
             raise HTTPException(status_code=500, detail="Invalid drone data received")
 
 

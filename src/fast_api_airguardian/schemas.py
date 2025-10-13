@@ -22,7 +22,5 @@ class ViolationSchema(BaseModel):
     owner_ssn: str
     owner_phone: int
 
-   # class Config:
-       # from_attributes = True #* 'orm_mode' has been renamed to 'from_attributes'
     model_config = ConfigDict(from_attributes=True)  # modern way
 

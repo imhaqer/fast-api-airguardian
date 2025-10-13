@@ -19,12 +19,7 @@ REQUEST_TIMEOUT = 10.0
 MAX_REPEAT = 3
 NO_FLY_ZONE_RADIUS = 1000  # units
 
-# validate coordinates
 
-"""async def fetch_drone_data() -> list[dict]:
-    for attempt in range(MAX_REPEAT):
-        try:
-            async with httpx.AsyncClient(timeout=REQUEST_TIME) as client:"""
 def calculate_distance(x: int, y: int) -> int:
     return math.sqrt(x**2 + y**2)
 
@@ -40,7 +35,7 @@ def fetch_drones_data() -> list[dict]:
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            print(f"⚠️ Attempt {attempt + 1}/{MAX_REPEAT} failed: {e}")
+            logger.warning(f"⚠️ Attempt {attempt + 1}/{MAX_REPEAT} failed: {e}")
     logger.error("❌ Failed to fetch drone data after multiple attempts.")
     return []
 
@@ -56,14 +51,7 @@ def get_drone_owner_info(owner_id: int) -> dict:
         return {}
 
 def store_violation_to_db(drone_data: dict, owner_info: dict):
-    """1st try Create a NEW database session for each violation"""
-    """2nd try Create a NEW database session for each violation - NO db parameter!"""
-    """SYNC version - use regular Session, not AsyncSession"""
-    # Create sync engine and session
-    # ❌ Creating new engine for each violation:
-    #engine = create_engine(str(settings.database_url_sync))
-
-    """✅ CORRECT: Use shared database engine and connection pool"""
+    """Use shared database engine and connection pool"""
     db = get_db_session()  # ✅ Get session from shared pool
     
     try:
@@ -71,7 +59,6 @@ def store_violation_to_db(drone_data: dict, owner_info: dict):
         y = drone_data.get("y", 0)
         distance = calculate_distance(x, y)
 
-        # ✅ Fixed variable name (violations → violation)
         violation = Violation(
             drone_id=drone_data.get("id", ""),
             timestamp=datetime.utcnow(),
@@ -95,7 +82,6 @@ def store_violation_to_db(drone_data: dict, owner_info: dict):
         raise
     finally:
         db.close()  # ✅ Always close session
-   # return violations
 
 
 def process_nfz_violations(): # without passing a session
@@ -108,7 +94,6 @@ def process_nfz_violations(): # without passing a session
         return 0
 
     try: 
-        # ✅ Now this will work because Drone model matches API fields
         drones = [Drone(**drone) for drone in drone_data_raw]
         logger.info(f"✅ Successfully validated {len(drones)} drones")
             
@@ -118,7 +103,6 @@ def process_nfz_violations(): # without passing a session
     
     violations_detected = 0
     for drone in drones:
-        # ✅ Use the correct field names: drone.x, drone.y (not position_x, position_y)
         if is_in_nfz(drone.x, drone.y):
             distance = calculate_distance(drone.x, drone.y)
             logger.warning(f"🚨 NFZ Violation! Drone id: {drone.id}")
@@ -132,31 +116,10 @@ def process_nfz_violations(): # without passing a session
     logger.info(f"NFZ check completed. Found {violations_detected} violations.")
     return violations_detected
 
-
-"""@celery_app.task(name="src.fast_api_airguardian.tasks.fetch_drone_positions_task")
-def fetch_drone_positions_task():
-   
-
-    async def task_main():
-        # Create an async session
-        async with async_session() as session:
-            await process_nfz_violations(session)
-
-    # Run the async function in the event loop
-    asyncio.run(task_main())"""
-
-
 @celery_app.task(name="src.fast_api_airguardian.tasks.fetch_drone_positions_task")
 def fetch_drone_positions_task():
-    """
-    Celery task that runs NFZ violation processing
-    """
-    """async def task_main():
-        return process_nfz_violations()  # No session parameter needed
-"""
-    # Run the async function
     try:
-       # result = asyncio.run(task_main())
+
         result = process_nfz_violations()  # Direct sync call - no async!
         logger.info(f"🎉 Celery task completed. Violations found: {result}")
         return {
@@ -171,5 +134,4 @@ def fetch_drone_positions_task():
             "error": str(e),
             "timestamp": datetime.utcnow().isoformat()
         }
-    
 # USE SYNC CODE FOR CELERY
