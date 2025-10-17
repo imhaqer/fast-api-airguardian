@@ -20,15 +20,50 @@ MAX_REPEAT = 3
 NO_FLY_ZONE_RADIUS = 1000  # units
 
 
-def calculate_distance(x: int, y: int) -> int:
+def calculate_distance(x: int, y: int):
+    """
+    Calculate Euclidean distance from center point (0,0).
+    
+    Args:
+        x: X coordinate of the drone position
+        y: Y coordinate of the drone position
+        
+    Returns:
+        int: Distance from center
+    """
     return math.sqrt(x**2 + y**2)
 
 def is_in_nfz(x: int, y: int) -> bool:
+    """
+    Check if a position is within the No-Fly Zone.
+    
+    The No-Fly Zone is defined as a circular area with radius 
+    NO_FLY_ZONE_RADIUS from the center point (0,0).
+    
+    Args:
+        x: X coordinate of the drone position
+        y: Y coordinate of the drone position
+        
+    Returns:
+        bool: True if position is within NFZ, False otherwise
+    """
     distance = math.sqrt(x**2 + y**2)
     return distance <= NO_FLY_ZONE_RADIUS
 
 # --- Data fetch ---
 def fetch_drones_data() -> list[dict]:
+    """
+    Fetch live drone position data from external API.
+    
+    Implements retry logic with exponential backoff for reliability.
+    
+    Returns:
+        list[dict]: List of drone objects with position data
+        Empty list if all retry attempts fail
+        
+    Raises:
+        Logs warnings for failed attempts, error for complete failure
+    """
     for attempt in range(MAX_REPEAT):
         try:
             response = requests.get(str(settings.base_url), timeout=REQUEST_TIMEOUT)
@@ -40,6 +75,16 @@ def fetch_drones_data() -> list[dict]:
     return []
 
 def get_drone_owner_info(owner_id: int) -> dict:
+    """
+    Fetch drone owner information from user API.
+    
+    Args:
+        owner_id: Unique identifier for drone owner
+        
+    Returns:
+        dict: Owner information including name and contact details
+        Empty dict if owner_id is invalid or API call fails
+    """
     try:
         if not owner_id:
             return {}
@@ -51,7 +96,22 @@ def get_drone_owner_info(owner_id: int) -> dict:
         return {}
 
 def store_violation_to_db(drone_data: dict, owner_info: dict):
-    """Use shared database engine and connection pool"""
+    """
+    Store NFZ violation record in database.
+    
+    Creates a new violation entry with drone position data and owner information.
+    Uses shared database connection pool for efficient session management.
+    
+    Args:
+        drone_data: Dictionary containing drone position and identification
+        owner_info: Dictionary containing owner personal information
+        
+    Returns:
+        Violation: The created violation record
+        
+    Raises:
+        Exception: If database operation fails, rolls back transaction
+    """
     db = get_db_session()  # ✅ Get session from shared pool
     
     try:
@@ -85,6 +145,16 @@ def store_violation_to_db(drone_data: dict, owner_info: dict):
 
 
 def process_nfz_violations(): # without passing a session
+    """
+    Main NFZ violation detection and processing function.
+    
+    Fetches current drone positions, validates data, checks for NFZ violations,
+    and stores violation records with owner information.
+    
+    Returns:
+        int: Number of violations detected and processed
+        0:   no drone data available or validation fails
+    """
     logger.info("🚁 Starting NFZ check task")
 
     drone_data_raw = fetch_drones_data()
@@ -117,6 +187,19 @@ def process_nfz_violations(): # without passing a session
 
 @celery_app.task(name="src.fast_api_airguardian.tasks.fetch_drone_positions_task")
 def fetch_drone_positions_task():
+    """
+    Celery task for periodic drone position monitoring and NFZ violation detection.
+    
+    This background task runs on a schedule to continuously monitor drone positions
+    and detect No-Fly Zone violations.
+    
+    Returns:
+        dict: Task execution result with:
+            - success: Boolean indicating task completion status
+            - violations_detected: Number of violations found
+            - timestamp: UTC timestamp of task completion
+            - error: Error message if task failed
+    """
     try:
 
         result = process_nfz_violations()  # Direct sync call - no async!
