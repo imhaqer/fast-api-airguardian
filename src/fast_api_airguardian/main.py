@@ -17,7 +17,11 @@ logger = logging.getLogger(__name__)
 
 NO_FLYING_ZONE = 1000
 
-app = FastAPI()
+app = FastAPI(
+    title="Drone Monitoring API",
+    description="API for monitoring drones and NFZ violations",
+    version="1.0.0"
+)
 
 @app.on_event("startup")
 def startup_event():
@@ -40,11 +44,30 @@ def startup_event():
 
 @app.get("/health")
 def health():
+    """
+    Check API status and connectivity.
+
+    Returns:
+        A simple status message to confirm the API is working.
+    """
     return {"success": "ok"}
 
 
 @app.get("/drones", response_model=List[schemas.Drone])
 async def get_drones():
+    """
+    Get real-time drone positions.
+
+    Fetches current drone data from an external service in real-time.
+    Each call return the most up-to-date positions of all active drones.
+
+    Raises:
+        HTTPException 503: Service unavailable
+        HTTPException 500: Data validation failed
+
+    Returns:
+        List[Drone]: Real-time list of all the active drones with current positions
+    """
     try:
         logger.info(f"📡 Fetching drones from {str(settings.base_url)}")
         async with httpx.AsyncClient() as client:
@@ -67,6 +90,19 @@ async def read_violations(
     db: AsyncSession = Depends(get_async_db),
     x_secret: str = Header(None)
 ):
+    """
+    Get all NFZ (No-Fly Zone) violations.
+
+    Requires a secret key for API authentication (in header)
+    db: Database connection (automatically handled)
+
+    Raises:
+        HTTPException 401: Invalid secret key
+        HTTPException 404: No violations found
+
+    Return: 
+        List[ViolationSchema]: All recorded NFZ violation incidents.
+    """
     if x_secret != settings.api_secret:
         raise HTTPException(status_code=401, detail="Invalid secret key")
         
