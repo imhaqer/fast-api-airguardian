@@ -113,7 +113,6 @@ def process_nfz_violations(): # without passing a session
             drone_dict = drone.dict()
             store_violation_to_db(drone_dict, owner_info)  # No db paramete
             violations_detected += 1
-    logger.info(f"NFZ check completed. Found {violations_detected} violations.")
     return violations_detected
 
 @celery_app.task(name="src.fast_api_airguardian.tasks.fetch_drone_positions_task")
@@ -121,7 +120,7 @@ def fetch_drone_positions_task():
     try:
 
         result = process_nfz_violations()  # Direct sync call - no async!
-        logger.info(f"🎉 Celery task completed. Violations found: {result}")
+        logger.info(f"⚠️ Celery task completed. Violations found: {result}")
         return {
             "success": True,
             "violations_detected": result,
