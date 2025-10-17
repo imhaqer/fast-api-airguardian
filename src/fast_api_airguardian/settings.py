@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     database_url: PostgresDsn
     redis_url: RedisDsn
     api_secret: str = "default-secret"
+    postgres_db: str
     postgres_user: str
     postgres_password: str
     database_url_async: str
