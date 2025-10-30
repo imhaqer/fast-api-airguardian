@@ -6,21 +6,28 @@ from .settings import settings
 # Single Base for all models
 Base = declarative_base()
 
-# Sync engine for Celery and table creation
+# Celery needs sync connections for blocking operations 
 sync_engine = create_engine(
     str(settings.database_url_sync), 
-    echo=True,
+    echo=True,              #disable in production
     pool_size=5,
+    pool_timeout=30,
     max_overflow=20,
-    pool_pre_ping=True
+    pool_pre_ping=True,
+    pool_recycle=3600,
+    async_strategy=True     # Async driver (asyncpg)
 )
 SyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
 
-# Async engine for FastAPI
+# FastAPI needs async connections for concurrent I/O
 async_engine = create_async_engine(
     str(settings.database_url_async), 
-    echo=True,
-    pool_size=5
+    echo=True,              #disable in production
+    pool_size=5,
+    pool_overflow=10,
+    pool_timeout=5,
+    pool_recyle=3600,
+    sync_strategy=True      # Sync driver (psycopg2)
 )
 AsyncSessionLocal = sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
 
