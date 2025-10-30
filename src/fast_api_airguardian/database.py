@@ -15,7 +15,8 @@ sync_engine = create_engine(
     max_overflow=20,
     pool_pre_ping=True,
     pool_recycle=3600,
-    async_strategy=True     # Async driver (asyncpg)
+    sync_strategy=True      # Sync driver (psycopg2)
+    
 )
 SyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
 
@@ -27,7 +28,8 @@ async_engine = create_async_engine(
     pool_overflow=10,
     pool_timeout=5,
     pool_recyle=3600,
-    sync_strategy=True      # Sync driver (psycopg2)
+    async_strategy=True     # Async driver (asyncpg)
+    
 )
 AsyncSessionLocal = sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
 
