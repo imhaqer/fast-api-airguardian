@@ -14,9 +14,7 @@ sync_engine = create_engine(
     pool_timeout=30,
     max_overflow=20,
     pool_pre_ping=True,
-    pool_recycle=3600,
-    sync_strategy=True      # Sync driver (psycopg2)
-    
+    pool_recycle=3600,  
 )
 SyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
 
@@ -25,11 +23,9 @@ async_engine = create_async_engine(
     str(settings.database_url_async), 
     echo=True,              #disable in production
     pool_size=5,
-    pool_overflow=10,
+    max_overflow=10,
     pool_timeout=5,
-    pool_recyle=3600,
-    async_strategy=True     # Async driver (asyncpg)
-    
+    pool_recycle=3600,  
 )
 AsyncSessionLocal = sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
 
