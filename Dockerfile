@@ -15,9 +15,9 @@ RUN pip install poetry
 # Copy dependency files FIRST
 COPY pyproject.toml poetry.lock* ./
 
-# Install Python dependencies
+# Install Python dependencies (skip installing the project itself)
 RUN poetry config virtualenvs.create false
-RUN poetry install --no-interaction --no-ansi
+RUN poetry install --no-root --no-interaction --no-ansi
 
 # Copy ALL application code
 COPY . .
@@ -27,5 +27,5 @@ ENV PYTHONPATH=/app/src
 
 EXPOSE 8000
 
-# Run the application from the src directory
+# Run the application
 CMD ["uvicorn", "fast_api_airguardian.main:app", "--host", "0.0.0.0", "--port", "8000"]
