@@ -9,7 +9,7 @@ Base = declarative_base()
 # Celery needs sync connections for blocking operations 
 sync_engine = create_engine(
     str(settings.database_url_sync), 
-    echo=True,              #disable in production
+    echo=False,              #disable in production
     pool_size=5,
     pool_timeout=30,
     max_overflow=20,
@@ -21,7 +21,7 @@ SyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_eng
 # FastAPI needs async connections for concurrent I/O
 async_engine = create_async_engine(
     str(settings.database_url_async), 
-    echo=True,              #disable in production
+    echo=False,              #disable in production
     pool_size=5,
     max_overflow=10,
     pool_timeout=5,
