@@ -55,6 +55,13 @@ A real-time drone monitoring system designed to protect critical infrastructure 
 
 ```
 
+## How It Works
+
+1. The **Celery beat** scheduler triggers `fetch_drone_positions_task` every 10 seconds.
+2. The task fetches drone positions from the external API and checks each drone's distance from `[0, 0]`.
+3. Any drone within the 1,000-unit radius is flagged as a violation; owner details are fetched and the record is stored in PostgreSQL.
+4. The **FastAPI** service exposes the stored violations via the `/nfz` endpoint, secured with a secret header.
+
 ## Demo
 
 All endpoints are documented and testable via the interactive Swagger UI at `/docs`.
@@ -73,29 +80,48 @@ Each violation record includes the drone ID, timestamp, position coordinates, di
 ![Get NFZ response](assets/get-nfz-response.png)
 
 
-## How It Works
+## Prerequisites
 
-1. The **Celery beat** scheduler triggers `fetch_drone_positions_task` every 10 seconds.
-2. The task fetches drone positions from the external API and checks each drone's distance from `[0, 0]`.
-3. Any drone within the 1,000-unit radius is flagged as a violation; owner details are fetched and the record is stored in PostgreSQL.
-4. The **FastAPI** service exposes the stored violations via the `/nfz` endpoint, secured with a secret header.
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
 
+## Quick Start
 
-## 📋 Prerequisites
+**1. Clone the repository:**
+```bash
+git clone https://github.com/imhaqer/fast-api-airguardian.git
+cd fast-api-airguardian
+```
 
-Ensure you have the following installed on your system:
--   Docker
--   Docker Compose
-## ⚙️ Quick Start
+**2. Configure environment variables:**
+```bash
+cp .env.example .env
+```
+Then edit `.env` with your values.
 
-1. **Clone & setup:**
+**3. Start all services:**
+```bash
+docker compose up --build
+```
 
-   ```bash
-   git clone https://github.com/imhaqer/fast-api-airguardian.git
-   cd fast-api-airguardian
+The API will be available at `http://localhost:8000`.
 
+**4. Check the interactive docs:**
 
-LOADING.. ⏳
+Open `http://localhost:8000/docs` in your browser.
 
+## Running Tests
+
+Tests run without Docker using Poetry:
+
+```bash
+# Install dev dependencies
+poetry install
+
+# Run the test suite
+poetry run pytest
+```
+
+Or via the GitHub Actions workflow on push to `main`
 
 
