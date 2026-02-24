@@ -34,9 +34,9 @@ def startup_event():
             break
         except OperationalError as e:
             if attempt < max_retries - 1:
-                wait_time = 2 ** attempt  # Exponential backoff
-                logger.warning(f"⚠️ Database not ready, retrying in {wait_time}s... (attempt {attempt + 1}/{max_retries})")
-                time.sleep(wait_time)
+                backoff_time = 2 ** attempt  # Exponential backoff
+                logger.warning(f"⚠️ Database not ready, retrying in {backoff_time}s... (attempt {attempt + 1}/{max_retries})")
+                time.sleep(backoff_time)
             else:
                 logger.error("❌ Failed to connect to database after multiple attempts")
                 raise
