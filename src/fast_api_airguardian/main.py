@@ -98,7 +98,7 @@ async def read_violations(
 
     Raises:
         HTTPException 401: Invalid secret key
-        HTTPException 404: No violations found
+        HTTPException 200: No violations found
 
     Return: 
         List[ViolationSchema]: All recorded NFZ violation incidents.
@@ -110,5 +110,5 @@ async def read_violations(
     violations = result.scalars().all()
 
     if not violations:
-        raise HTTPException(status_code=404, detail="No NFZ violations found")
+        raise HTTPException(status_code=200, detail="No NFZ violations found")
     return violations
