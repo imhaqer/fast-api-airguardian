@@ -1,4 +1,3 @@
-version: '3.9'
 services:
 
   postgres:
@@ -27,6 +26,7 @@ services:
 
   #add health check for fastapi
   fastapi:
+    user: "${UID}:${GID}"
     build: .
     container_name: airguardian_fastapi
     working_dir: /app
@@ -34,6 +34,7 @@ services:
     environment:
       PYTHONPATH: /app/src
       DATABASE_URL_ASYNC: ${DATABASE_URL_ASYNC}    # async DB URL
+      DATABASE_URL_SYNC: ${DATABASE_URL_SYNC}      # sync DB URL for Alembic
       BASE_URL: ${BASE_URL}
       REDIS_URL: ${REDIS_URL}
       API_SECRET: ${API_SECRET}

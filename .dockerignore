@@ -3,3 +3,8 @@
 .gitignore
 __pycache__
 .celery.py
+# Alembic runtime files
+migrations/__pycache__/
+*.pyc
+*.pyo
+migrations/script.py.mako

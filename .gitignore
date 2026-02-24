@@ -2,3 +2,8 @@
 __pycache__
 .notes
 .celerybeat-schedule
+# Alembic runtime files
+migrations/__pycache__/
+*.pyc
+*.pyo
+migrations/script.py.mako
