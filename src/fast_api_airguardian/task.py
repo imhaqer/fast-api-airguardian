@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 import asyncio
-from datetime import datetime
+from datetime import datetime, time
 import math
 from fast_api_airguardian.settings import settings
 from .schemas import Drone
@@ -71,6 +71,10 @@ def fetch_drones_data() -> list[dict]:
             return response.json()
         except Exception as e:
             logger.warning(f"⚠️ Attempt {attempt + 1}/{MAX_REPEAT} failed: {e}")
+            if attempt < MAX_REPEAT -1:
+                backoff_time = 2 ** attempt         # Exponential backoff
+                logger.info(f"⏳ Retrying in {backoff_time} seconds...")
+                time.sleep(backoff_time)
     logger.error("❌ Failed to fetch drone data after multiple attempts.")
     return []
 
