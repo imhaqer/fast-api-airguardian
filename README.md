@@ -33,6 +33,9 @@ A real-time drone monitoring system designed to protect critical infrastructure 
 -   **Python Dependency Management:** Poetry
 -   **Testing:** Pytest, pytest-mock, pytest-asyncio
 
+## Architecture Diagram
+
+![Architecture Diagram](assets/drone.drawio.svg)
 
 ## Project Structure
 
@@ -123,5 +126,6 @@ poetry run pytest
 ```
 
 Or via the GitHub Actions workflow on push to `main`
+
 
 
