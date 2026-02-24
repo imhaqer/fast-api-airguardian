@@ -4,16 +4,20 @@ from alembic import context
 import os
 import sys
 
+# Make sure our app is importable
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from fast_api_airguardian.database import Base
-from fast_api_airguardian import model  # noqa: F401
+from fast_api_airguardian import model  # noqa: F401 — ensures models are registered
 
+# Alembic Config object
 config = context.config
 
+# Logging
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+# Metadata for autogenerate
 target_metadata = Base.metadata
 
 
