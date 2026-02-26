@@ -23,7 +23,6 @@ All endpoints are documented and testable via the interactive Swagger UI at `/do
 ![Get drones response](assets/get-drone-response.png)
 
 ### `GET /nfz` — NFZ violations (requires `x-secret` header)
-Each violation record includes the drone ID, timestamp, position coordinates, distance from center, and owner details (name, SSN, phone).
 
 ![Get NFZ request](assets/get-nfz.png)
 ![Get NFZ response](assets/get-nfz-response.png)
@@ -133,4 +132,5 @@ poetry run pytest
 ```
 
 Or via the GitHub Actions workflow on push to `main`
+
 
