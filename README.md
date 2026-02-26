@@ -5,7 +5,7 @@ A real-time drone monitoring system designed to protect critical infrastructure 
 
 ## API Endpoints
 
-| Method | Path | Auth | Description |
+| Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | `GET` | `/health` | None | Service health check |
 | `GET` | `/drones` | None | Live drone positions |
@@ -132,5 +132,6 @@ poetry run pytest
 ```
 
 Or via the GitHub Actions workflow on push to `main`
+
 
 
