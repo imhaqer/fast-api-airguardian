@@ -60,21 +60,30 @@ Each violation record includes the drone ID, timestamp, position coordinates, di
 ## Project Structure
 
 ```
-.
+fast-api-airguardian/
 ├── src/
 │   └── fast_api_airguardian/
-│       ├── main.py          # FastAPI app & route handlers
-│       ├── task.py          # Celery tasks & NFZ detection logic
-│       ├── celery.py        # Celery app configuration
-│       ├── database.py      # Async/sync SQLAlchemy setup
-│       ├── model.py         # SQLAlchemy models
+│       ├── __init__.py
+│       ├── main.py          # FastAPI app & endpoints
+│       ├── settings.py      # Pydantic config
+│       ├── database.py      # Async/sync DB engines
+│       ├── model.py         # SQLAlchemy ORM models
 │       ├── schemas.py       # Pydantic schemas
-│       └── settings.py      # App settings via pydantic-settings
+│       ├── task.py          # NFZ detection logic
+│       └── celery.py        # Celery app & beat schedule
+├── migrations/
+│   ├── env.py
+│   ├── alembic.ini
+│   └── versions/
 ├── tests/
-├── docker-compose.yml
+│   ├── conftest.py
+│   └── test_task.py
 ├── Dockerfile
+├── docker-compose.yml
 ├── pyproject.toml
-└── .env.example
+├── poetry.lock
+├── .env
+└── README.md
 ```
 
 ## Architecture Diagram
@@ -124,3 +133,4 @@ poetry run pytest
 ```
 
 Or via the GitHub Actions workflow on push to `main`
+
