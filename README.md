@@ -76,7 +76,7 @@ fast-api-airguardian/
 │   └── versions/
 ├── tests/
 │   ├── conftest.py
-│   └── test_task.py
+│   └── test_nfz.py
 ├── Dockerfile
 ├── docker-compose.yml
 ├── pyproject.toml
@@ -132,6 +132,7 @@ poetry run pytest
 ```
 
 Or via the GitHub Actions workflow on push to `main`
+
 
 
 
