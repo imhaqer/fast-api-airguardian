@@ -1,6 +1,6 @@
 # AirGuardian Backend - Mini Version
 
-A real-time drone monitoring system designed to protect critical infrastructure by detecting unauthorized drone incursions into a designated No-Fly Zone (NFZ). This FastAPI-based backend service periodically fetches drone position data, checks for violations, stores them in a database, and exposes API endpoints for data retrieval.
+A real-time drone monitoring backend that detects unauthorized incursions into a No-Fly Zone. Built with FastAPI, it periodically fetches drone position data, checks for violations, stores them in PostgreSQL, and exposes a RESTful API for data retrieval.
 
 
 ## API Endpoints
@@ -132,6 +132,7 @@ poetry run pytest
 ```
 
 Or via the GitHub Actions workflow on push to `main`
+
 
 
 
