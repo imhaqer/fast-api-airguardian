@@ -20,7 +20,7 @@ MAX_REPEAT = 3
 NO_FLY_ZONE_RADIUS = 1000  # units
 
 
-def calculate_distance(x: int, y: int):
+def calculate_distance(x: int, y: int) -> float: 
     """
     Calculate Euclidean distance from center point (0,0).
     
@@ -29,7 +29,7 @@ def calculate_distance(x: int, y: int):
         y: Y coordinate of the drone position
         
     Returns:
-        int: Distance from center
+        float: Distance from center point
     """
     return math.sqrt(x**2 + y**2)
 
@@ -78,6 +78,7 @@ def fetch_drones_data() -> list[dict]:
     logger.error("❌ Failed to fetch drone data after multiple attempts.")
     return []
 
+
 def get_drone_owner_info(owner_id: int) -> dict:
     """
     Fetch drone owner information from user API.
@@ -89,17 +90,24 @@ def get_drone_owner_info(owner_id: int) -> dict:
         dict: Owner information including name and contact details
         Empty dict if owner_id is invalid or API call fails
     """
-    try:
-        if not owner_id:
-            return {}
-        response = requests.get(f"https://drones-api.hive.fi/users/{owner_id}", timeout=REQUEST_TIMEOUT)
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        logger.error(f"Error fetching owner info: {e}")
-        return {}
+    for attempt in range(MAX_REPEAT):
+        try:
+            if not owner_id:
+                return {}
+            response = requests.get(f"{settings.user_api_url}/{owner_id}", timeout=REQUEST_TIMEOUT)
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.warning(f"⚠️ Attempt {attempt + 1}/{MAX_REPEAT} to fetch owner info failed: {e}")
+            if attempt < MAX_REPEAT -1:
+                backoff_time = 2 ** attempt         # Exponential backoff 
+                logger.info(f"⏳ Retrying in {backoff_time} seconds...")
+                time.sleep(backoff_time)
+    logger.error("❌ Failed to fetch owner info after multiple attempts.")
+    return {}
 
-def store_violation_to_db(drone_data: dict, owner_info: dict):
+
+def store_violation_to_db(drone_data: dict, owner_info: dict) -> Violation:
     """
     Store NFZ violation record in database.
     
@@ -116,20 +124,17 @@ def store_violation_to_db(drone_data: dict, owner_info: dict):
     Raises:
         Exception: If database operation fails, rolls back transaction
     """
+    x, y = drone_data.get("x", 0), drone_data.get("y", 0)
     db = get_db_session()  # ✅ Get session from shared pool
     
     try:
-        x = drone_data.get("x", 0)
-        y = drone_data.get("y", 0)
-        distance = calculate_distance(x, y)
-
         violation = Violation(
             drone_id=drone_data.get("id", ""),
             timestamp=datetime.utcnow(),
             position_x=x,
             position_y=y,
             position_z=drone_data.get("z", 0),
-            distance_from_center=distance,
+            distance_from_center=calculate_distance(x, y),
             owner_first_name=owner_info.get("first_name", ""),
             owner_last_name=owner_info.get("last_name", ""),
             owner_ssn=owner_info.get("social_security_number", ""),
@@ -147,8 +152,24 @@ def store_violation_to_db(drone_data: dict, owner_info: dict):
     finally:
         db.close()  # ✅ Always close session
 
+def validate_drone_data(drone_data: dict) -> Drone | None:
+    """
+    Validate raw drone dict. Returns Drone or None on failure.
+    """
+    try:
+        return Drone(**drone_data)
+    except ValidationError as e:
+        logger.error(f"❌ Validation failed for drone {drone_data.get('id', 'unknown')}: {e}")
+        return None
 
-def process_nfz_violations(): # without passing a session
+def validate_all_drones(raw_drones: list[dict]) -> list[Drone]:
+    """Validate a list of raw drone dicts. Skips invalid ones."""
+
+    drones = [d for drone in raw_drones if (d := validate_drone_data(drone))]
+    logger.info(f"✅ Validated {len(drones)}/{len(raw_drones)} drones")
+    return drones
+
+def process_nfz_violations() -> int: # without passing a session
     """
     Main NFZ violation detection and processing function.
     
@@ -161,35 +182,25 @@ def process_nfz_violations(): # without passing a session
     """
     logger.info("🚁 Starting NFZ check task")
 
-    drone_data_raw = fetch_drones_data()
-
-    if not drone_data_raw:
+    raw_drones = fetch_drones_data()
+    if not raw_drones:
         logger.info("⚠️ No drone data received.")
         return 0
 
-    try: 
-        drones = [Drone(**drone) for drone in drone_data_raw]
-        logger.info(f"✅ Successfully validated {len(drones)} drones")
-            
-    except ValidationError as e:
-        logger.error("❌ Validation error while parsing drone data: %s", e)
-        return   # Since this is a background task, just log and return (no HTTPException)
+    drones = validate_all_drones(raw_drones)
     
     violations_detected = 0
     for drone in drones:
-        if is_in_nfz(drone.x, drone.y):
-            distance = calculate_distance(drone.x, drone.y)
-            logger.warning(f"🚨 NFZ Violation! Drone id: {drone.id}")
-            
-            owner_info = get_drone_owner_info(drone.owner_id) if drone.owner_id else {}
-            
-            # Convert to dict for your existing store function
-            drone_dict = drone.dict()
-            store_violation_to_db(drone_dict, owner_info)  # No db paramete
-            violations_detected += 1
+        if not is_in_nfz(drone.x, drone.y):
+            continue
+        logger.warning(f"🚨 NFZ Violation! Drone id: {drone.id}")
+        owner_info = get_drone_owner_info(drone.owner_id) if drone.owner_id else {}
+        store_violation_to_db(drone.dict(), owner_info) 
+        violations_detected+=1
     return violations_detected
 
-@celery_app.task(name="src.fast_api_airguardian.tasks.fetch_drone_positions_task")
+
+@celery_app.task(name="nfz-violation-check")
 def fetch_drone_positions_task():
     """
     Celery task for periodic drone position monitoring and NFZ violation detection.
@@ -205,19 +216,15 @@ def fetch_drone_positions_task():
             - error: Error message if task failed
     """
     try:
-
-        result = process_nfz_violations()  # Direct sync call - no async!
-        logger.info(f"⚠️ Celery task completed. Violations found: {result}")
+        result = process_nfz_violations()  # Direct sync call
         return {
             "success": True,
             "violations_detected": result,
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
-        logger.error(f"❌ Celery task failed: {e}")
         return {
             "success": False,
             "error": str(e),
             "timestamp": datetime.utcnow().isoformat()
         }
-# USE SYNC CODE FOR CELERY

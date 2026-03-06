@@ -2,7 +2,7 @@ services:
 
   postgres:
     image: postgres:16
-    container_name: airguardian_postgres
+    container_name: postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -14,21 +14,22 @@ services:
       interval: 10s
       retries: 5
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pg-data:/var/lib/postgresql/data
 
   redis:
     image: redis:7
-    container_name: airguardian_redis
+    container_name: redis
     ports:
       - "6379:6379"
     volumes:
-      - redisdata:/data  # for Redis to persist data
+      - redis-data:/data  # for Redis to persist data
 
   #add health check for fastapi
-  fastapi:
+  api:
     user: "${UID}:${GID}"
     build: .
-    container_name: airguardian_fastapi
+    image: api
+    container_name: api
     working_dir: /app
     command: poetry run uvicorn src.fast_api_airguardian.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
@@ -46,9 +47,10 @@ services:
       - postgres
      # - redis
 
-  celery:
+  worker:
     build: .
-    container_name: airguardian_celery
+    image: worker
+    container_name: worker
     working_dir: /app
     #user: "nobody:nogroup"
     command: poetry run celery -A src.fast_api_airguardian.celery worker --beat --loglevel=info
@@ -61,10 +63,11 @@ services:
     volumes:
       - ./:/app/
     depends_on:
-      - fastapi
       - postgres
       - redis
 
 volumes:
-  pgdata:
-  redisdata:
+  pg-data:
+    name: pg-data
+  redis-data:
+    name: redis-data

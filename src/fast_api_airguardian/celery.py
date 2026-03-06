@@ -20,7 +20,7 @@ celery_app.conf.update(
 
 celery_app.conf.beat_schedule = {
     'fetch-drone-positions-every-10s' : {
-        'task': 'src.fast_api_airguardian.tasks.fetch_drone_positions_task',
+        'task': 'nfz-violation-check',
         'schedule': 10.0,
     },
 }

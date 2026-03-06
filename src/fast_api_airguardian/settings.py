@@ -4,6 +4,7 @@ from typing import Literal
 
 class Settings(BaseSettings):
     base_url: AnyHttpUrl
+    user_api_url: AnyHttpUrl
     database_url: PostgresDsn
     redis_url: RedisDsn
     api_secret: str = "default-secret"
